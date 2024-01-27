@@ -46,6 +46,8 @@ You will need to use reference pages and documentation to discover necessary too
 
 ```{r}
 # Code for loading packages and reading in data
+library(tidyverse)
+weather <- read_csv("https://lmyint.github.io/212_spring_2024/data/sfo_weather.csv")
 ```
 
 
@@ -55,9 +57,85 @@ You will need to use reference pages and documentation to discover necessary too
 ```{r}
 # Code for recreating the visualization
 # Use as many code chunks as you need to organize your work well
+
+weather_clean <- weather %>% 
+  arrange(Month,Day) %>% 
+  mutate(dateInYear = yday(date)) %>% 
+  mutate(month_name = month.abb[Month]) 
+
+month_starts <- weather %>% 
+  filter(Day == 1 & Month !=1)
+
+month_labs = c("Jan", "Feb","Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+
+# record high data set
+record_high <- weather %>% 
+  filter(RecordHigh == High)
+
+
+Temperature <- ggplot(weather_clean)+
+  geom_linerange(aes(x = dateInYear, ymin = RecordLow, ymax = RecordHigh), color = "#ECEBE3", linewidth = 1) +
+  scale_x_continuous(breaks=seq(15,365,30), labels = month_labs, limits = c(0, 365),expand = c(0,1))+
+  scale_y_continuous(breaks=seq(0,120,40), limits = c(0, 120))+
+  geom_linerange(aes(x = dateInYear, ymin = NormalLow, ymax = NormalHigh), color = "#C8B8BA",linewidth = 1) +
+  geom_linerange(aes(x = dateInYear, ymin = Low, ymax = High), color = "#A90248", linewidth = 2) +
+  geom_vline(data = month_starts,aes(xintercept = dateInYear), lty = "dashed", color = "#E7E7E7")+
+  geom_point(data = record_high, aes(x = dateInYear, y = High+1), shape = 25, fill = "black")+
+  geom_text(data = record_high, aes(x = dateInYear, y = High+7, label = RecordText,check_overlap=T), size = 1.8)+
+  scale_color_manual("black")+
+  ggtitle("SFO Weather in 2011")+
+  labs(y = "")+
+  theme_classic()+
+  theme(axis.title.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank(),
+    plot.title = element_text(hjust = 0.5))
+  
+
+```
+
+```{r}
+
+
+month_precip <- weather %>% 
+  filter(Day ==30) 
+month_feb <- weather %>% 
+  filter(Month == 2,
+         Day == 28)
+
+record_precip <- weather %>% 
+  mutate(Year = year(date)) %>% 
+  filter(PrecipYr==2011)
+  
+
+
+Precipitation <- weather %>% 
+  ggplot(aes(x = dateInYear, y = CulmPrec)) + 
+  geom_area(fill = "#ebeae2", color = "#32a3d8")+
+  geom_text(data = month_precip, aes(x = dateInYear-4, y = CulmPrec+0.6, label = CulmPrec, check_overlap=T), size = 1.8)+
+  geom_text(data = month_feb, aes(x = dateInYear-4, y = CulmPrec+0.4, label = CulmPrec,check_overlap=T), size = 2)+
+  geom_vline(data = month_starts,aes(xintercept = dateInYear), color = "#EDEDED")+
+  geom_point(data = record_precip, aes(x = dateInYear, y = CulmPrec+0.05), shape = 25, fill = "black")+
+  labs(y = "")+
+  theme_classic()+
+  theme(axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.line.x = element_blank())+
+  scale_x_continuous(expand = c(0,1))+
+  scale_y_continuous(breaks=seq(0,8,4), limits = c(0, 8))
+
+
 ```
 
 
+```{r}
+library(cowplot)
+
+plot_grid(Temperature, Precipitation, labels = c('Temperature', 'Precipitation'), ncol = 1, rel_heights = c(3,1), align = "v", label_size = 10, hjust = -0.7)
+```
 
 
 # AI usage
